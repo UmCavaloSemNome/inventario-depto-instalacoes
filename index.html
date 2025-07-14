@@ -40,9 +40,23 @@
 
     <script type="module">
         // =================== IMPORTANTE: COLE AQUI SUA CONFIGURAÇÃO DO SUPABASE ===================
-        const supabaseUrl = 'https://jhhprqtfbvznjndshnhe.supabase.co';
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoaHBycXRmYnZ6bmpuZHNobmhlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjUwNTg3OCwiZXhwIjoyMDY4MDgxODc4fQ.yqiUiQRHk9OdUFbLjUnvrSqpDMULvWj3inUgDFiFSOs';
+        const supabaseUrl = 'COLE_A_URL_DO_SEU_PROJETO_AQUI';
+        const supabaseAnonKey = 'COLE_SUA_CHAVE_ANON_PUBLIC_AQUI';
         // =======================================================================================
+
+        // Validação das credenciais do Supabase para evitar erros
+        if (supabaseUrl.startsWith('COLE_A_URL') || supabaseAnonKey.startsWith('COLE_SUA_CHAVE')) {
+            document.getElementById('app').innerHTML = `
+                <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-red-50 text-red-700 text-center">
+                    <i class="fas fa-exclamation-triangle text-5xl mb-4"></i>
+                    <h1 class="text-2xl font-bold mb-2">Erro de Configuração</h1>
+                    <p class="max-w-md">
+                        As credenciais do Supabase não foram configuradas. Por favor, edite o arquivo <strong>index.html</strong> e insira sua URL e Chave Anon nos locais indicados no código.
+                    </p>
+                </div>
+            `;
+            throw new Error("Supabase credentials are not set. Please update the script.");
+        }
 
         const { createClient } = supabase;
         const db = createClient(supabaseUrl, supabaseAnonKey);
@@ -150,6 +164,34 @@
             showScreen('managerHub');
         }
 
+        async function selectUser(user) {
+            currentUser = user;
+            clearChannels();
+            await listenToCatalog();
+
+            if (user.role === 'manager') {
+                renderManagerHub();
+            } else {
+                if (!user.vehicle_id) {
+                    alert('Este técnico não está associado a nenhum veículo.');
+                    return;
+                }
+                const { data, error } = await db.from('vehicles').select('*').eq('id', user.vehicle_id).single();
+                if (data) {
+                    currentVehicle = data;
+                    renderInventoryScreen();
+                    listenToInventory();
+                } else {
+                    alert('Veículo associado não encontrado.');
+                }
+            }
+        }
+
+        async function listenToCatalog() {
+            const { data } = await db.from('items').select('*');
+            catalog = data || [];
+        }
+
         function renderVehicleSelection(vehicles) {
             screens.managerVehicles.innerHTML = `
                 <header class="bg-white shadow-sm sticky top-0 z-20 p-4 flex justify-between items-center">
@@ -187,26 +229,46 @@
             showScreen('managerVehicles');
         }
 
-        async function selectUser(user) {
-            currentUser = user;
-            clearChannels();
-            await listenToCatalog();
-
-            if (user.role === 'manager') {
-                renderManagerHub();
-            } else {
-                const { data, error } = await db.from('vehicles').select('*').eq('id', user.vehicle_id).single();
-                if (data) {
-                    currentVehicle = data;
-                    renderInventoryScreen();
-                    listenToInventory();
-                }
-            }
+        function renderInventoryScreen() {
+            const isManager = currentUser.role === 'manager';
+            screens.main.innerHTML = `
+                <header class="bg-white shadow-sm sticky top-0 z-20">
+                    <div class="p-4 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-lg text-gray-800">${isManager ? `Gerenciando: ${currentVehicle.name}` : currentUser.name}</p>
+                            <p class="text-sm text-gray-500">${isManager ? `Gestor: ${currentUser.name}` : currentVehicle.name}</p>
+                        </div>
+                        <button class="logout-btn text-gray-500 hover:text-red-500 transition-colors">
+                            ${isManager ? '<i class="back-to-vehicles-btn fas fa-arrow-left text-xl mr-4" title="Voltar"></i>' : ''}
+                            <i class="fas fa-sign-out-alt text-2xl" title="Sair"></i>
+                        </button>
+                    </div>
+                    <div class="border-b border-gray-200"><nav class="flex -mb-px px-4" id="category-tabs">
+                        <button data-category="Equipamento" class="tab-btn flex-1 text-center py-3 px-1 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors tab-active">Equipamentos</button>
+                        <button data-category="Consumo" class="tab-btn flex-1 text-center py-3 px-1 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">Consumo</button>
+                        <button data-category="Ferramenta" class="tab-btn flex-1 text-center py-3 px-1 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">Ferramentas</button>
+                    </nav></div>
+                </header>
+                <main class="p-4 space-y-3 pb-24">
+                    <div id="inventory-list" class="space-y-3"></div>
+                </main>
+                ${!isManager ? `<div class="fixed bottom-4 right-4"><button id="request-material-btn" class="bg-green-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-green-600" title="Solicitar Material"><i class="fas fa-clipboard-list text-2xl"></i></button></div>` : ''}
+            `;
+            renderInventoryList();
+            
+            screens.main.querySelectorAll('.tab-btn').forEach(tab => {
+                tab.onclick = (e) => {
+                    screens.main.querySelector('.tab-active').classList.remove('tab-active');
+                    e.currentTarget.classList.add('tab-active');
+                    currentCategory = e.currentTarget.dataset.category;
+                    renderInventoryList();
+                };
+            });
+            screens.main.querySelector('.logout-btn').onclick = logout;
+            if(isManager) screens.main.querySelector('.back-to-vehicles-btn').onclick = () => showScreen('managerVehicles');
+            if(!isManager) screens.main.querySelector('#request-material-btn').onclick = () => openRequestModal();
+            showScreen('main');
         }
-
-        // O restante das funções (renderInventoryScreen, renderRequestsScreen, etc.)
-        // devem ser adaptadas para usar as chamadas do Supabase (db.from(...).select(), .insert(), .update())
-        // e a escuta de canais em tempo real. O código abaixo completa essa migração.
 
         function renderInventoryList() {
             const listEl = screens.main.querySelector('#inventory-list');
@@ -245,21 +307,281 @@
                 listEl.appendChild(div);
             });
         }
+
+        function renderRequestsScreen(requestsData) {
+            screens.managerRequests.innerHTML = `
+                <header class="bg-white shadow-sm sticky top-0 z-20 p-4 flex justify-between items-center">
+                    <div><p class="font-bold text-lg text-gray-800">Solicitações de Material</p></div>
+                    <button class="back-to-hub-btn text-gray-500 hover:text-blue-500"><i class="fas fa-arrow-left text-2xl"></i></button>
+                </header>
+                <main class="p-4 space-y-3"></main>`;
+            const main = screens.managerRequests.querySelector('main');
+            if(requestsData.length === 0) {
+                main.innerHTML = `<div class="text-center py-10 px-4 bg-white rounded-lg shadow-sm"><i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">Nenhuma solicitação encontrada.</p></div>`;
+            } else {
+                requestsData.forEach(req => {
+                    const div = document.createElement('div');
+                    div.className = "bg-white rounded-lg shadow-sm p-4";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div><p class="font-semibold">${req.users.name}</p><p class="text-sm text-gray-500">${new Date(req.created_at).toLocaleString('pt-BR')}</p></div>
+                            <span class="status-badge status-${req.status}">${req.status}</span>
+                        </div>
+                        <ul class="mt-3 list-disc list-inside text-sm text-gray-700">${req.request_items.map(i => `<li>${i.quantity}x ${i.item_name}</li>`).join('')}</ul>
+                        ${req.notes ? `<p class="mt-2 text-sm bg-gray-50 p-2 rounded-md"><b>Obs:</b> ${req.notes}</p>` : ''}
+                        ${req.status === 'pending' ? `<div class="flex justify-end space-x-2 mt-4">
+                            <button data-req-id="${req.id}" class="reject-req-btn px-3 py-1 bg-red-500 text-white text-sm rounded-md hover:bg-red-600">Rejeitar</button>
+                            <button data-req-id="${req.id}" class="approve-req-btn px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600">Aprovar</button>
+                        </div>` : ''}`;
+                    div.querySelector('.approve-req-btn')?.addEventListener('click', () => updateRequestStatus(req.id, 'approved'));
+                    div.querySelector('.reject-req-btn')?.addEventListener('click', () => updateRequestStatus(req.id, 'rejected'));
+                    main.appendChild(div);
+                });
+            }
+            screens.managerRequests.querySelector('.back-to-hub-btn').onclick = () => showScreen('managerHub');
+            showScreen('managerRequests');
+        }
+
+        function getIconForCategory(category) { 
+            const mapping = { 'Equipamento': 'fa-satellite-dish', 'Consumo': 'fa-tape', 'Ferramenta': 'fa-screwdriver-wrench' };
+            return mapping[category] || 'fa-box';
+        }
         
-        // ... O restante das funções de renderização e modais, adaptadas para Supabase ...
-        // (O código completo está omitido por brevidade, mas a lógica é a mesma,
-        // apenas as chamadas ao banco de dados são trocadas.)
+        function logout() {
+            currentUser = null;
+            currentVehicle = null;
+            clearChannels();
+            showScreen('login');
+        }
+        
+        async function listenToVehicles() {
+            const { data } = await db.from('vehicles').select('*');
+            allVehicles = data || [];
+            renderVehicleSelection(allVehicles);
+            
+            const channel = db.channel('public:vehicles')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, async () => {
+                    const { data } = await db.from('vehicles').select('*');
+                    allVehicles = data || [];
+                    renderVehicleSelection(allVehicles);
+                }).subscribe();
+            channels.push(channel);
+        }
+
+        async function listenToUsers() {
+            const { data: usersData } = await db.from('users').select('*');
+            const { data: vehiclesData } = await db.from('vehicles').select('*');
+            allUsers = usersData || [];
+            allVehicles = vehiclesData || [];
+            renderUsersManagementScreen(allUsers);
+
+            const channel = db.channel('public:users')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
+                    const { data } = await db.from('users').select('*');
+                    allUsers = data || [];
+                    renderUsersManagementScreen(allUsers);
+                }).subscribe();
+            channels.push(channel);
+        }
+
+        async function listenToInventory() {
+            if (!currentVehicle) return;
+            const { data } = await db.from('inventory').select('*, items(*)').eq('vehicle_id', currentVehicle.id);
+            inventory = data || [];
+            renderInventoryList();
+
+            const channel = db.channel(`public:inventory:vehicle_id=eq.${currentVehicle.id}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory', filter: `vehicle_id=eq.${currentVehicle.id}` }, async () => {
+                    const { data } = await db.from('inventory').select('*, items(*)').eq('vehicle_id', currentVehicle.id);
+                    inventory = data || [];
+                    renderInventoryList();
+                }).subscribe();
+            channels.push(channel);
+        }
+
+        async function listenToRequests() {
+            const { data } = await db.from('requests').select('*, users(name), request_items(*)').order('created_at', { ascending: false });
+            requests = data || [];
+            renderRequestsScreen(requests);
+
+            const channel = db.channel('public:requests')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, async () => {
+                    const { data } = await db.from('requests').select('*, users(name), request_items(*)').order('created_at', { ascending: false });
+                    requests = data || [];
+                    renderRequestsScreen(requests);
+                }).subscribe();
+            channels.push(channel);
+        }
+
+        function openModal(innerHTML) {
+            modalContainer.classList.remove('pointer-events-none');
+            modalContainer.innerHTML = `<div class="modal-backdrop fixed inset-0 flex items-center justify-center p-4">${innerHTML}</div>`;
+            setTimeout(() => modalContainer.querySelector('.modal-content')?.classList.remove('scale-95'), 10);
+        }
+
+        function closeModal() {
+            const content = modalContainer.querySelector('.modal-content');
+            if (content) {
+                content.classList.add('scale-95');
+                setTimeout(() => {
+                    modalContainer.innerHTML = '';
+                    modalContainer.classList.add('pointer-events-none');
+                }, 300);
+            }
+        }
+        
+        async function selectVehicleForManager(vehicleId) {
+            currentVehicle = allVehicles.find(v => v.id === vehicleId);
+            if (!currentVehicle) return;
+            await listenToInventory();
+            renderInventoryScreen();
+        }
+
+        function openStockModal(inventoryId, currentQuantity, itemName) {
+            openModal(`
+                <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">Dar Baixa: <span class="font-normal">${itemName}</span></h3>
+                    <p class="text-sm text-gray-600 mb-2">Quantidade atual: <span class="font-semibold">${currentQuantity}</span></p>
+                    <div class="mb-4"><label for="stock-qty-used" class="block text-sm font-medium text-gray-700">Quantidade utilizada</label><input type="number" id="stock-qty-used" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Ex: 2"></div>
+                    <div class="mb-6"><label for="stock-os" class="block text-sm font-medium text-gray-700">Ordem de Serviço (Opcional)</label><input type="text" id="stock-os" class="mt-1 block w-full rounded-md border-gray-300" placeholder="Ex: OS-12345"></div>
+                    <div class="flex justify-end space-x-3"><button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button><button id="stock-confirm-btn" data-inv-id="${inventoryId}" data-current-qty="${currentQuantity}" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Confirmar Baixa</button></div>
+                </div>`);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#stock-confirm-btn').onclick = confirmStockUpdate;
+        }
+
+        async function confirmStockUpdate(e) {
+            const invId = e.currentTarget.dataset.invId;
+            const currentQty = parseInt(e.currentTarget.dataset.currentQty);
+            const qtyUsed = parseInt(document.getElementById('stock-qty-used').value);
+            if (isNaN(qtyUsed) || qtyUsed <= 0 || qtyUsed > currentQty) {
+                alert("Quantidade inválida."); return;
+            }
+
+            const newQuantity = currentQty - qtyUsed;
+            await db.from('inventory').update({ quantity: newQuantity }).eq('id', invId);
+            closeModal();
+        }
+
+        function openAddVehicleModal() {
+            openModal(`
+                <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">Adicionar Novo Veículo</h3>
+                    <div class="mb-4">
+                        <label for="vehicle-name" class="block text-sm font-medium text-gray-700">Nome do Veículo</label>
+                        <input type="text" id="vehicle-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Ex: Veículo 03 - Placa GHI-9012">
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="save-vehicle-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Salvar</button>
+                    </div>
+                </div>
+            `);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#save-vehicle-btn').onclick = saveNewVehicle;
+        }
+        
+        async function saveNewVehicle() {
+            const vehicleName = document.getElementById('vehicle-name').value.trim();
+            if (!vehicleName) { alert('O nome do veículo não pode ser vazio.'); return; }
+            await db.from('vehicles').insert({ name: vehicleName });
+            alert(`Veículo "${vehicleName}" adicionado com sucesso!`);
+            closeModal();
+        }
+
+        function openEditVehicleModal(vehicleId, currentName) {
+             openModal(`
+                <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">Editar Veículo</h3>
+                    <div class="mb-4">
+                        <label for="edit-vehicle-name" class="block text-sm font-medium text-gray-700">Novo nome do Veículo</label>
+                        <input type="text" id="edit-vehicle-name" value="${currentName}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="update-vehicle-btn" data-vehicle-id="${vehicleId}" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Salvar Alterações</button>
+                    </div>
+                </div>
+            `);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#update-vehicle-btn').onclick = confirmVehicleUpdate;
+        }
+
+        async function confirmVehicleUpdate(e) {
+            const vehicleId = e.currentTarget.dataset.vehicleId;
+            const newName = document.getElementById('edit-vehicle-name').value.trim();
+            if (!newName) { alert('O nome do veículo não pode ser vazio.'); return; }
+            await db.from('vehicles').update({ name: newName }).eq('id', vehicleId);
+            alert('Veículo atualizado com sucesso!');
+            closeModal();
+        }
+
+        function openAddEditTechnicianModal(userId = null) {
+            const isEditing = userId !== null;
+            const user = isEditing ? allUsers.find(u => u.id === userId) : null;
+            const title = isEditing ? 'Editar Técnico' : 'Adicionar Novo Técnico';
+
+            let vehicleOptions = allVehicles.map(v => `<option value="${v.id}" ${user && user.vehicle_id === v.id ? 'selected' : ''}>${v.name}</option>`).join('');
+
+            openModal(`
+                <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">${title}</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="tech-name" class="block text-sm font-medium text-gray-700">Nome do Técnico</label>
+                            <input type="text" id="tech-name" value="${user ? user.name : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label for="tech-vehicle" class="block text-sm font-medium text-gray-700">Almoxarifado (Veículo)</label>
+                            <select id="tech-vehicle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Nenhum</option>
+                                ${vehicleOptions}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="save-tech-btn" data-user-id="${userId || ''}" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Salvar</button>
+                    </div>
+                </div>
+            `);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#save-tech-btn').onclick = saveTechnician;
+        }
+
+        async function saveTechnician(e) {
+            const userId = e.currentTarget.dataset.userId;
+            const isEditing = userId !== '';
+            const name = document.getElementById('tech-name').value.trim();
+            const vehicleId = document.getElementById('tech-vehicle').value;
+
+            if (!name) { alert('O nome do técnico não pode ser vazio.'); return; }
+
+            const userData = { name: name, role: 'technician', vehicle_id: vehicleId || null };
+
+            if (isEditing) {
+                await db.from('users').update(userData).eq('id', userId);
+                alert('Técnico atualizado com sucesso!');
+            } else {
+                await db.from('users').insert(userData);
+                alert('Técnico adicionado com sucesso!');
+            }
+            closeModal();
+        }
 
         window.onload = async () => {
             await setupInitialData();
             
             const { data, error } = await db.from('users').select('*');
-            if(data) renderUserSelection(data);
-
+            if(data) {
+                allUsers = data;
+                renderUserSelection(allUsers);
+            }
+            
             const channel = db.channel('public:users')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
-                    const { data } = await db.from('users').select('*');
-                    if (data) renderUserSelection(data);
+                     const { data } = await db.from('users').select('*');
+                     if(data) renderUserSelection(data);
                 })
                 .subscribe();
             channels.push(channel);
