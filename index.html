@@ -50,7 +50,7 @@
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoaHBycXRmYnZ6bmpuZHNobmhlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjUwNTg3OCwiZXhwIjoyMDY4MDgxODc4fQ.yqiUiQRHk9OdUFbLjUnvrSqpDMULvWj3inUgDFiFSOs';
         // =======================================================================================
 
-        if (supabaseUrl.startsWith('COLE_A_URL') || supabaseAnonKey.startsWith('COLE_SUA_CHAVE')) {
+        if (supabaseUrl.startsWith('https://jhhprqtfbvznjndshnhe.supabase.co') || supabaseAnonKey.startsWith('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoaHBycXRmYnZ6bmpuZHNobmhlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjUwNTg3OCwiZXhwIjoyMDY4MDgxODc4fQ.yqiUiQRHk9OdUFbLjUnvrSqpDMULvWj3inUgDFiFSOs')) {
             document.getElementById('app').innerHTML = `
                 <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-red-50 text-red-700 text-center">
                     <i class="fas fa-exclamation-triangle text-5xl mb-4"></i>
@@ -104,9 +104,13 @@
             console.log("Criando dados iniciais no Supabase...");
             
             const { data: itemsData } = await db.from('items').insert([
-                { name: 'ALICATE DE CRIMPAR', sku: 'FER-001', category: 'Ferramenta' },
-                { name: 'ROTEADOR Wi-Fi', sku: 'EQU-001', category: 'Equipamento' },
-                { name: 'CONECTOR RJ45', sku: 'MAT-001', category: 'Consumo' },
+                { name: 'ABRAÇADEIRAS NYLON (TYRE UP)', sku: 'ABR-001', category: 'Consumo' },
+                { name: 'BOBINA DE CABO DE REDE CAT5E', sku: 'BOB-002', category: 'Consumo' },
+                { name: 'ONT ROTEADOR TP-LINK AX1800', sku: 'ONT-001', category: 'Equipamento' },
+                { name: 'ONU GPON BRIDGE ZTE RE905', sku: 'ONU-001', category: 'Equipamento' },
+                { name: 'MAÇARICO PORTÁTIL', sku: 'MAC-001', category: 'Ferramenta' },
+                { name: 'ALICATE CRIMPAR RJ45', sku: 'ALI-001', category: 'Ferramenta' },
+                { name: 'ESCADA 7 DEGRAUS 1,80 METROS', sku: 'ESC-001', category: 'Ferramenta' },
             ]).select();
 
             const { data: vehiclesData } = await db.from('vehicles').insert([
@@ -120,14 +124,12 @@
                 { name: 'Sérgio', role: 'manager', vehicle_id: null },
             ]);
 
-            await db.from('inventory').insert([
-                { vehicle_id: vehiclesData[0].id, item_id: itemsData[0].id, quantity: 1 },
-                { vehicle_id: vehiclesData[0].id, item_id: itemsData[1].id, quantity: 10 },
-                { vehicle_id: vehiclesData[0].id, item_id: itemsData[2].id, quantity: 100 },
-                { vehicle_id: vehiclesData[1].id, item_id: itemsData[0].id, quantity: 1 },
-                { vehicle_id: vehiclesData[1].id, item_id: itemsData[1].id, quantity: 8 },
-                { vehicle_id: vehiclesData[1].id, item_id: itemsData[2].id, quantity: 120 },
-            ]);
+            const inventoryToInsert = itemsData.map(item => ([
+                { vehicle_id: vehiclesData[0].id, item_id: item.id, quantity: Math.floor(Math.random() * 50) + 1 },
+                { vehicle_id: vehiclesData[1].id, item_id: item.id, quantity: Math.floor(Math.random() * 50) + 1 },
+            ])).flat();
+
+            await db.from('inventory').insert(inventoryToInsert);
             
             console.log("Dados iniciais criados com sucesso.");
         }
@@ -143,13 +145,13 @@
                     <button id="manage-vehicles-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-truck text-2xl text-blue-500"></i><div><p class="font-semibold">Gerenciar Almoxarifados</p><p class="text-sm text-gray-500">Adicionar ou editar veículos</p></div></button>
                     <button id="manage-users-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-users-cog text-2xl text-gray-500"></i><div><p class="font-semibold">Gerenciar Usuários</p><p class="text-sm text-gray-500">Adicionar ou editar técnicos</p></div></button>
                 </main>
-                <div class="fixed bottom-4 right-4"><button id="add-item-to-catalog-btn" class="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg" title="Adicionar Item ao Catálogo"><i class="fas fa-plus text-2xl"></i></button></div>`;
+                <div class="fixed bottom-4 right-4"><button id="add-item-to-catalog-btn" class="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg" title="Adicionar/Atualizar Catálogo via CSV"><i class="fas fa-book text-2xl"></i></button></div>`;
             
             screens.managerHub.querySelector('.logout-btn').onclick = logout;
             screens.managerHub.querySelector('#manage-vehicles-btn').onclick = () => { clearChannels(); listenToVehicles(); };
             screens.managerHub.querySelector('#view-requests-btn').onclick = () => { clearChannels(); listenToRequests(); };
             screens.managerHub.querySelector('#manage-users-btn').onclick = () => { clearChannels(); listenToUsers(); };
-            screens.managerHub.querySelector('#add-item-to-catalog-btn').onclick = () => { alert('Função para adicionar item ao catálogo será implementada aqui.'); };
+            screens.managerHub.querySelector('#add-item-to-catalog-btn').onclick = openImportCatalogCSVModal;
             showScreen('managerHub');
         }
 
@@ -276,7 +278,7 @@
             screens.main.querySelector('.logout-btn').onclick = logout;
             if(isManager) {
                 screens.main.querySelector('.back-to-vehicles-btn').onclick = () => showScreen('managerVehicles');
-                screens.main.querySelector('#import-csv-btn').onclick = openImportCSVModal;
+                screens.main.querySelector('#import-csv-btn').onclick = openImportInventoryCSVModal;
             }
             if(!isManager) screens.main.querySelector('#request-material-btn').onclick = () => openRequestModal();
             showScreen('main');
@@ -692,7 +694,7 @@
             alert(`Solicitação marcada como "${status}"!`);
         }
         
-        function openImportCSVModal() {
+        function openImportInventoryCSVModal() {
             openModal(`
                 <div class="modal-content bg-white w-full max-w-md rounded-lg shadow-xl p-6 transform scale-95">
                     <h3 class="font-bold text-lg mb-4">Importar Estoque por CSV</h3>
@@ -709,10 +711,10 @@
                 </div>
             `);
             modalContainer.querySelector('.cancel-btn').onclick = closeModal;
-            modalContainer.querySelector('#import-csv-confirm-btn').onclick = handleCSVImport;
+            modalContainer.querySelector('#import-csv-confirm-btn').onclick = handleInventoryCSVImport;
         }
 
-        async function handleCSVImport() {
+        async function handleInventoryCSVImport() {
             const fileInput = document.getElementById('csv-file');
             const feedbackEl = document.getElementById('csv-feedback');
             if (fileInput.files.length === 0) {
@@ -725,11 +727,11 @@
             const reader = new FileReader();
             reader.onload = async function(event) {
                 const csv = event.target.result;
-                const lines = csv.split('\n').slice(1); // Ignora o cabeçalho
+                const lines = csv.split('\n').slice(1);
                 let updatedCount = 0;
                 let errorCount = 0;
 
-                feedbackEl.textContent = 'Processando... Isso pode levar alguns segundos.';
+                feedbackEl.textContent = 'Processando...';
 
                 const inventoryUpdates = [];
 
@@ -768,10 +770,81 @@
                 
                 feedbackEl.innerHTML = `<span class="text-green-600">${updatedCount} itens atualizados com sucesso.</span><br><span class="text-red-600">${errorCount} SKUs não encontrados ou com erros.</span>`;
                 alert('Importação finalizada!');
-                listenToInventory(); // Atualiza a lista na tela
+                listenToInventory();
             };
             reader.readAsText(file);
         }
+
+        function openImportCatalogCSVModal() {
+             openModal(`
+                <div class="modal-content bg-white w-full max-w-md rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">Importar Catálogo de Itens por CSV</h3>
+                    <p class="text-sm text-gray-600 mb-4">Selecione um arquivo CSV com as colunas: <strong>name,sku,category</strong>. O sistema irá adicionar ou atualizar os itens no catálogo geral com base nos SKUs.</p>
+                    <div class="mb-4">
+                        <label for="csv-file" class="block text-sm font-medium text-gray-700">Arquivo CSV</label>
+                        <input type="file" id="csv-file" accept=".csv" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    </div>
+                    <div id="csv-feedback" class="text-sm"></div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="import-csv-confirm-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Importar</button>
+                    </div>
+                </div>
+            `);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#import-csv-confirm-btn').onclick = handleCatalogCSVImport;
+        }
+
+        async function handleCatalogCSVImport() {
+            const fileInput = document.getElementById('csv-file');
+            const feedbackEl = document.getElementById('csv-feedback');
+            if (fileInput.files.length === 0) {
+                alert('Por favor, selecione um arquivo.');
+                return;
+            }
+            const file = fileInput.files[0];
+            feedbackEl.textContent = 'Lendo arquivo...';
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const csv = event.target.result;
+                const lines = csv.split('\n').slice(1);
+                let upsertedCount = 0;
+                let errorCount = 0;
+
+                feedbackEl.textContent = 'Processando...';
+
+                const itemsToUpsert = [];
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    const [name, sku, category] = line.split(',').map(s => s.trim());
+
+                    if (!name || !sku || !category) {
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    itemsToUpsert.push({ name, sku, category });
+                }
+
+                if (itemsToUpsert.length > 0) {
+                    const { error } = await db.from('items').upsert(itemsToUpsert, { onConflict: 'sku' });
+                    if (error) {
+                        alert('Ocorreu um erro ao importar o catálogo.');
+                        console.error(error);
+                        feedbackEl.textContent = 'Erro ao importar.';
+                        return;
+                    }
+                    upsertedCount = itemsToUpsert.length;
+                }
+                
+                feedbackEl.innerHTML = `<span class="text-green-600">${upsertedCount} itens adicionados/atualizados com sucesso.</span><br><span class="text-red-600">${errorCount} linhas com erros.</span>`;
+                alert('Importação do catálogo finalizada!');
+            };
+            reader.readAsText(file);
+        }
+
 
         window.onload = async () => {
             await setupInitialData();
