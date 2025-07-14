@@ -25,9 +25,15 @@
         <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4">
             <i class="fas fa-boxes-stacked text-5xl text-blue-500 mb-4"></i>
             <h1 class="text-2xl font-bold text-gray-800 mb-2">Inventário de Campo</h1>
-            <p class="text-gray-600 mb-6">Selecione seu usuário para continuar</p>
-            <div id="user-selection" class="w-full max-w-sm bg-white p-6 rounded-lg shadow-md">
-                <div class="space-y-3"></div>
+            <p class="text-gray-600 mb-6">Digite seu nome para entrar</p>
+            <div class="w-full max-w-sm bg-white p-6 rounded-lg shadow-md">
+                <div class="space-y-4">
+                     <div>
+                        <label for="login-name" class="block text-sm font-medium text-gray-700">Seu Nome</label>
+                        <input type="text" id="login-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Ex: Sérgio">
+                    </div>
+                    <button id="login-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Entrar</button>
+                </div>
             </div>
         </div>
         <div id="manager-hub" class="hidden min-h-screen"></div>
@@ -109,9 +115,9 @@
             ]).select();
 
             await db.from('users').insert([
-                { name: 'Carlos (Técnico)', role: 'technician', vehicle_id: vehiclesData[0].id },
-                { name: 'Ana (Técnica)', role: 'technician', vehicle_id: vehiclesData[1].id },
-                { name: 'Sérgio (Gestor)', role: 'manager', vehicle_id: null },
+                { name: 'Carlos', role: 'technician', vehicle_id: vehiclesData[0].id },
+                { name: 'Ana', role: 'technician', vehicle_id: vehiclesData[1].id },
+                { name: 'Sérgio', role: 'manager', vehicle_id: null },
             ]);
 
             await db.from('inventory').insert([
@@ -126,22 +132,6 @@
             console.log("Dados iniciais criados com sucesso.");
         }
         
-        function renderUserSelection(users) {
-            const userSelectionDiv = screens.login.querySelector('#user-selection > div');
-            userSelectionDiv.innerHTML = '';
-            if (!users || users.length === 0) {
-                userSelectionDiv.innerHTML = `<p class="text-center text-gray-500">Nenhum usuário encontrado. Aguardando dados...</p>`;
-                return;
-            }
-            users.forEach(user => {
-                const button = document.createElement('button');
-                button.className = "user-btn w-full text-left px-4 py-3 bg-gray-50 hover:bg-blue-100 rounded-lg transition-colors";
-                button.innerHTML = `<p class="font-semibold text-gray-800">${user.name}</p><p class="text-sm text-gray-500">${user.role === 'manager' ? 'Acesso total' : 'Técnico de Campo'}</p>`;
-                button.onclick = () => selectUser(user);
-                userSelectionDiv.appendChild(button);
-            });
-        }
-
         function renderManagerHub() {
             screens.managerHub.innerHTML = `
                 <header class="bg-white shadow-sm sticky top-0 z-20 p-4 flex justify-between items-center">
@@ -163,25 +153,40 @@
             showScreen('managerHub');
         }
 
-        async function selectUser(user) {
-            currentUser = user;
+        async function loginUser() {
+            const name = document.getElementById('login-name').value.trim();
+            if (!name) {
+                alert('Por favor, digite seu nome.');
+                return;
+            }
+
+            const { data, error } = await db.from('users').select('*').ilike('name', name).single();
+
+            if (error || !data) {
+                alert('Usuário não encontrado. Verifique o nome e tente novamente.');
+                return;
+            }
+            
+            currentUser = data;
             clearChannels();
             await listenToCatalog();
 
-            if (user.role === 'manager') {
+            if (currentUser.role === 'manager') {
                 renderManagerHub();
             } else {
-                if (!user.vehicle_id) {
+                if (!currentUser.vehicle_id) {
                     alert('Este técnico não está associado a nenhum veículo.');
+                    logout();
                     return;
                 }
-                const { data, error } = await db.from('vehicles').select('*').eq('id', user.vehicle_id).single();
-                if (data) {
-                    currentVehicle = data;
+                const { data: vehicleData, error: vehicleError } = await db.from('vehicles').select('*').eq('id', currentUser.vehicle_id).single();
+                if (vehicleData) {
+                    currentVehicle = vehicleData;
                     renderInventoryScreen();
                     listenToInventory();
                 } else {
                     alert('Veículo associado não encontrado.');
+                    logout();
                 }
             }
         }
@@ -249,6 +254,11 @@
                     </nav></div>
                 </header>
                 <main class="p-4 space-y-3 pb-24">
+                    ${isManager ? `
+                    <button id="import-csv-btn" class="w-full mb-4 text-left p-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg shadow-sm flex items-center space-x-4">
+                        <i class="fas fa-file-csv text-2xl"></i>
+                        <div><p class="font-semibold">Importar CSV para este Almoxarifado</p><p class="text-sm">Carregar ou atualizar estoque via planilha</p></div>
+                    </button>` : ''}
                     <div id="inventory-list" class="space-y-3"></div>
                 </main>
                 ${!isManager ? `<div class="fixed bottom-4 right-4"><button id="request-material-btn" class="bg-green-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-green-600" title="Solicitar Material"><i class="fas fa-clipboard-list text-2xl"></i></button></div>` : ''}
@@ -264,7 +274,10 @@
                 };
             });
             screens.main.querySelector('.logout-btn').onclick = logout;
-            if(isManager) screens.main.querySelector('.back-to-vehicles-btn').onclick = () => showScreen('managerVehicles');
+            if(isManager) {
+                screens.main.querySelector('.back-to-vehicles-btn').onclick = () => showScreen('managerVehicles');
+                screens.main.querySelector('#import-csv-btn').onclick = openImportCSVModal;
+            }
             if(!isManager) screens.main.querySelector('#request-material-btn').onclick = () => openRequestModal();
             showScreen('main');
         }
@@ -678,23 +691,95 @@
             await db.from('requests').update({ status: status }).eq('id', reqId);
             alert(`Solicitação marcada como "${status}"!`);
         }
+        
+        function openImportCSVModal() {
+            openModal(`
+                <div class="modal-content bg-white w-full max-w-md rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">Importar Estoque por CSV</h3>
+                    <p class="text-sm text-gray-600 mb-4">Selecione um arquivo CSV com as colunas: <strong>SKU</strong> e <strong>Quantidade</strong>. O sistema irá atualizar o estoque deste almoxarifado com base nos SKUs encontrados.</p>
+                    <div class="mb-4">
+                        <label for="csv-file" class="block text-sm font-medium text-gray-700">Arquivo CSV</label>
+                        <input type="file" id="csv-file" accept=".csv" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    </div>
+                    <div id="csv-feedback" class="text-sm"></div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="import-csv-confirm-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Importar</button>
+                    </div>
+                </div>
+            `);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#import-csv-confirm-btn').onclick = handleCSVImport;
+        }
+
+        async function handleCSVImport() {
+            const fileInput = document.getElementById('csv-file');
+            const feedbackEl = document.getElementById('csv-feedback');
+            if (fileInput.files.length === 0) {
+                alert('Por favor, selecione um arquivo.');
+                return;
+            }
+            const file = fileInput.files[0];
+            feedbackEl.textContent = 'Lendo arquivo...';
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const csv = event.target.result;
+                const lines = csv.split('\n').slice(1); // Ignora o cabeçalho
+                let updatedCount = 0;
+                let errorCount = 0;
+
+                feedbackEl.textContent = 'Processando... Isso pode levar alguns segundos.';
+
+                const inventoryUpdates = [];
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    const [sku, quantityStr] = line.split(',').map(s => s.trim());
+                    const quantity = parseInt(quantityStr);
+
+                    if (!sku || isNaN(quantity)) {
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    const { data: itemData } = await db.from('items').select('id').eq('sku', sku).single();
+                    if (itemData) {
+                        inventoryUpdates.push({
+                            vehicle_id: currentVehicle.id,
+                            item_id: itemData.id,
+                            quantity: quantity,
+                        });
+                    } else {
+                        errorCount++;
+                    }
+                }
+
+                if (inventoryUpdates.length > 0) {
+                    const { error } = await db.from('inventory').upsert(inventoryUpdates, { onConflict: 'vehicle_id, item_id' });
+                    if (error) {
+                        alert('Ocorreu um erro ao atualizar o inventário.');
+                        console.error(error);
+                        feedbackEl.textContent = 'Erro ao atualizar.';
+                        return;
+                    }
+                    updatedCount = inventoryUpdates.length;
+                }
+                
+                feedbackEl.innerHTML = `<span class="text-green-600">${updatedCount} itens atualizados com sucesso.</span><br><span class="text-red-600">${errorCount} SKUs não encontrados ou com erros.</span>`;
+                alert('Importação finalizada!');
+                listenToInventory(); // Atualiza a lista na tela
+            };
+            reader.readAsText(file);
+        }
 
         window.onload = async () => {
             await setupInitialData();
             
-            const { data, error } = await db.from('users').select('*');
-            if(data) {
-                allUsers = data;
-                renderUserSelection(allUsers);
-            }
-            
-            const channel = db.channel('public:users')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
-                     const { data } = await db.from('users').select('*');
-                     if(data) renderUserSelection(data);
-                })
-                .subscribe();
-            channels.push(channel);
+            document.getElementById('login-btn').onclick = loginUser;
+            document.getElementById('login-name').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') loginUser();
+            });
         };
 
     </script>
