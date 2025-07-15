@@ -847,7 +847,16 @@
 
                 for (const line of lines) {
                     if (!line.trim()) continue;
-                    const [name, sku, category] = line.split(',').map(s => s.trim());
+                    
+                    const parts = line.split(',');
+                    if (parts.length < 3) {
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    const category = parts.pop().trim();
+                    const sku = parts.pop().trim();
+                    const name = parts.join(',').trim();
 
                     if (!name || !sku || !category) {
                         errorCount++;
