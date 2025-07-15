@@ -264,10 +264,17 @@
                 </header>
                 <main class="p-4 space-y-3 pb-24">
                     ${isManager ? `
-                    <button id="import-csv-btn" class="w-full mb-4 text-left p-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg shadow-sm flex items-center space-x-4">
-                        <i class="fas fa-file-csv text-2xl"></i>
-                        <div><p class="font-semibold">Importar CSV para este Almoxarifado</p><p class="text-sm">Carregar ou atualizar estoque via planilha</p></div>
-                    </button>` : ''}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <button id="bulk-adjust-btn" class="w-full text-left p-4 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg shadow-sm flex items-center space-x-4">
+                            <i class="fas fa-edit text-2xl"></i>
+                            <div><p class="font-semibold">Ajustar Estoque em Massa</p><p class="text-sm">Adicionar ou remover múltiplos itens</p></div>
+                        </button>
+                        <button id="import-csv-btn" class="w-full text-left p-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg shadow-sm flex items-center space-x-4">
+                            <i class="fas fa-file-csv text-2xl"></i>
+                            <div><p class="font-semibold">Importar Estoque CSV</p><p class="text-sm">Carregar estoque via planilha</p></div>
+                        </button>
+                    </div>
+                    ` : ''}
                     <div id="inventory-list" class="space-y-3"></div>
                 </main>
                 ${!isManager ? `<div class="fixed bottom-4 right-4"><button id="request-material-btn" class="bg-green-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-green-600" title="Solicitar Material"><i class="fas fa-clipboard-list text-2xl"></i></button></div>` : ''}
@@ -286,6 +293,7 @@
             if(isManager) {
                 screens.main.querySelector('.back-to-vehicles-btn').onclick = () => showScreen('managerVehicles');
                 screens.main.querySelector('#import-csv-btn').onclick = openImportInventoryCSVModal;
+                screens.main.querySelector('#bulk-adjust-btn').onclick = openBulkAdjustModal;
             }
             if(!isManager) screens.main.querySelector('#request-material-btn').onclick = () => openRequestModal();
             showScreen('main');
