@@ -950,6 +950,78 @@
             }
             closeModal();
         }
+        
+        function openBulkAdjustModal() {
+            const inventoryMap = new Map(inventory.map(inv => [inv.items.id, inv.quantity]));
+            const itemsByCategory = catalog.reduce((acc, item) => {
+                if (!acc[item.category]) acc[item.category] = [];
+                acc[item.category].push(item);
+                return acc;
+            }, {});
+
+            let categoriesHTML = Object.keys(itemsByCategory).sort().map(category => {
+                let itemsHTML = itemsByCategory[category]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(item => {
+                        const currentQty = inventoryMap.get(item.id) || 0;
+                        return `<div class="flex items-center justify-between p-2">
+                                    <label for="bulk-item-${item.id}" class="text-sm text-gray-800">${item.name}</label>
+                                    <input type="number" id="bulk-item-${item.id}" value="${currentQty}" data-item-id="${item.id}" class="bulk-item-qty w-20 rounded-md border-gray-300 shadow-sm text-sm" placeholder="Qtd">
+                                </div>`;
+                    }).join('');
+                return `<div class="mb-4">
+                            <h4 class="font-bold text-md mb-2 border-b pb-1">${category}</h4>
+                            <div class="space-y-2">${itemsHTML}</div>
+                        </div>`;
+            }).join('');
+
+            openModal(`
+                <div class="modal-content bg-white w-full max-w-lg rounded-lg shadow-xl transform scale-95">
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg mb-4">Ajuste de Estoque em Massa para ${currentVehicle.name}</h3>
+                        <div class="space-y-2 max-h-96 overflow-y-auto pr-2">${categoriesHTML}</div>
+                    </div>
+                    <div class="flex justify-end space-x-3 bg-gray-50 p-4 rounded-b-lg">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="save-bulk-adjust-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar Alterações</button>
+                    </div>
+                </div>`);
+            
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#save-bulk-adjust-btn').onclick = handleBulkAdjust;
+        }
+
+        async function handleBulkAdjust() {
+            const inputs = document.querySelectorAll('.bulk-item-qty');
+            const inventoryUpdates = [];
+
+            inputs.forEach(input => {
+                const itemId = input.dataset.itemId;
+                const newQuantity = parseInt(input.value);
+
+                if (!isNaN(newQuantity) && newQuantity >= 0) {
+                    inventoryUpdates.push({
+                        vehicle_id: currentVehicle.id,
+                        item_id: itemId,
+                        quantity: newQuantity
+                    });
+                }
+            });
+
+            if (inventoryUpdates.length > 0) {
+                const { error } = await db.from('inventory').upsert(inventoryUpdates, { onConflict: 'vehicle_id, item_id' });
+                if (error) {
+                    alert('Ocorreu um erro ao atualizar o inventário.');
+                    console.error(error);
+                    return;
+                }
+                alert('Estoque atualizado com sucesso!');
+                closeModal();
+                listenToInventory();
+            } else {
+                alert('Nenhuma alteração para salvar.');
+            }
+        }
 
         window.onload = async () => {
             await setupInitialData();
