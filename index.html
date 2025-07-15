@@ -25,12 +25,16 @@
         <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4">
             <i class="fas fa-boxes-stacked text-5xl text-blue-500 mb-4"></i>
             <h1 class="text-2xl font-bold text-gray-800 mb-2">Inventário de Campo</h1>
-            <p class="text-gray-600 mb-6">Digite seu nome para entrar</p>
+            <p class="text-gray-600 mb-6">Digite seu nome e senha para entrar</p>
             <div class="w-full max-w-sm bg-white p-6 rounded-lg shadow-md">
                 <div class="space-y-4">
                      <div>
                         <label for="login-name" class="block text-sm font-medium text-gray-700">Seu Nome</label>
                         <input type="text" id="login-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Ex: Sérgio">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700">Senha</label>
+                        <input type="password" id="login-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     <button id="login-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Entrar</button>
                 </div>
@@ -119,9 +123,9 @@
             ]).select();
 
             await db.from('users').insert([
-                { name: 'Carlos', role: 'technician', vehicle_id: vehiclesData[0].id },
-                { name: 'Ana', role: 'technician', vehicle_id: vehiclesData[1].id },
-                { name: 'Sérgio', role: 'manager', vehicle_id: null },
+                { name: 'Carlos', role: 'technician', vehicle_id: vehiclesData[0].id, password: '123' },
+                { name: 'Ana', role: 'technician', vehicle_id: vehiclesData[1].id, password: '123' },
+                { name: 'Sérgio', role: 'manager', vehicle_id: null, password: '123' },
             ]);
 
             const inventoryToInsert = itemsData.map(item => ([
@@ -157,15 +161,16 @@
 
         async function loginUser() {
             const name = document.getElementById('login-name').value.trim();
-            if (!name) {
-                alert('Por favor, digite seu nome.');
+            const password = document.getElementById('login-password').value;
+            if (!name || !password) {
+                alert('Por favor, digite seu nome e senha.');
                 return;
             }
 
-            const { data, error } = await db.from('users').select('*').ilike('name', name).single();
+            const { data, error } = await db.from('users').select('*').ilike('name', name).eq('password', password).single();
 
             if (error || !data) {
-                alert('Usuário não encontrado. Verifique o nome e tente novamente.');
+                alert('Usuário ou senha inválidos.');
                 return;
             }
             
@@ -405,6 +410,8 @@
         function logout() {
             currentUser = null;
             currentVehicle = null;
+            document.getElementById('login-name').value = '';
+            document.getElementById('login-password').value = '';
             clearChannels();
             showScreen('login');
         }
@@ -587,6 +594,10 @@
                             <input type="text" id="tech-name" value="${user ? user.name : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>
                         <div>
+                            <label for="tech-password" class="block text-sm font-medium text-gray-700">Senha</label>
+                            <input type="password" id="tech-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="${isEditing ? 'Deixe em branco para não alterar' : ''}">
+                        </div>
+                        <div>
                             <label for="tech-vehicle" class="block text-sm font-medium text-gray-700">Almoxarifado (Veículo)</label>
                             <select id="tech-vehicle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="">Nenhum</option>
@@ -608,11 +619,16 @@
             const userId = e.currentTarget.dataset.userId;
             const isEditing = userId !== '';
             const name = document.getElementById('tech-name').value.trim();
+            const password = document.getElementById('tech-password').value;
             const vehicleId = document.getElementById('tech-vehicle').value;
 
             if (!name) { alert('O nome do técnico não pode ser vazio.'); return; }
+            if (!isEditing && !password) { alert('A senha é obrigatória para novos técnicos.'); return; }
 
             const userData = { name: name, role: 'technician', vehicle_id: vehicleId || null };
+            if (password) {
+                userData.password = password;
+            }
 
             if (isEditing) {
                 await db.from('users').update(userData).eq('id', userId);
@@ -851,6 +867,9 @@
             
             document.getElementById('login-btn').onclick = loginUser;
             document.getElementById('login-name').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') loginUser();
+            });
+            document.getElementById('login-password').addEventListener('keyup', (e) => {
                 if (e.key === 'Enter') loginUser();
             });
         };
