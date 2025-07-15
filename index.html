@@ -148,14 +148,16 @@
                     <button id="view-requests-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-inbox text-2xl text-yellow-500"></i><div><p class="font-semibold">Ver Solicitações</p><p class="text-sm text-gray-500">Aprovar ou rejeitar pedidos</p></div></button>
                     <button id="manage-vehicles-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-truck text-2xl text-blue-500"></i><div><p class="font-semibold">Gerenciar Almoxarifados</p><p class="text-sm text-gray-500">Adicionar ou editar veículos</p></div></button>
                     <button id="manage-users-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-users-cog text-2xl text-gray-500"></i><div><p class="font-semibold">Gerenciar Usuários</p><p class="text-sm text-gray-500">Adicionar ou editar técnicos</p></div></button>
+                     <button id="import-catalog-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-file-csv text-2xl text-green-500"></i><div><p class="font-semibold">Importar Catálogo CSV</p><p class="text-sm text-gray-500">Adicionar ou atualizar itens em massa</p></div></button>
                 </main>
-                <div class="fixed bottom-4 right-4"><button id="add-item-to-catalog-btn" class="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg" title="Adicionar/Atualizar Catálogo via CSV"><i class="fas fa-book text-2xl"></i></button></div>`;
+                <div class="fixed bottom-4 right-4"><button id="add-item-btn" class="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg" title="Adicionar Novo Item ao Catálogo"><i class="fas fa-plus text-2xl"></i></button></div>`;
             
             screens.managerHub.querySelector('.logout-btn').onclick = logout;
             screens.managerHub.querySelector('#manage-vehicles-btn').onclick = () => { clearChannels(); listenToVehicles(); };
             screens.managerHub.querySelector('#view-requests-btn').onclick = () => { clearChannels(); listenToRequests(); };
             screens.managerHub.querySelector('#manage-users-btn').onclick = () => { clearChannels(); listenToUsers(); };
-            screens.managerHub.querySelector('#add-item-to-catalog-btn').onclick = openImportCatalogCSVModal;
+            screens.managerHub.querySelector('#add-item-btn').onclick = () => openAddEditItemModal();
+            screens.managerHub.querySelector('#import-catalog-btn').onclick = openImportCatalogCSVModal;
             showScreen('managerHub');
         }
 
@@ -861,6 +863,82 @@
             reader.readAsText(file);
         }
 
+        function openAddEditItemModal(itemId = null) {
+            const isEditing = itemId !== null;
+            const item = isEditing ? catalog.find(i => i.id === itemId) : null;
+            const title = isEditing ? 'Editar Item do Catálogo' : 'Adicionar Novo Item ao Catálogo';
+
+            openModal(`
+                <div class="modal-content bg-white w-full max-w-sm rounded-lg shadow-xl p-6 transform scale-95">
+                    <h3 class="font-bold text-lg mb-4">${title}</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="item-name" class="block text-sm font-medium text-gray-700">Nome do Item</label>
+                            <input type="text" id="item-name" value="${item ? item.name : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label for="item-sku" class="block text-sm font-medium text-gray-700">SKU (Código Único)</label>
+                            <input type="text" id="item-sku" value="${item ? item.sku : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" ${isEditing ? 'disabled' : ''}>
+                        </div>
+                        <div>
+                            <label for="item-category" class="block text-sm font-medium text-gray-700">Categoria</label>
+                            <select id="item-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option ${item?.category === 'Equipamento' ? 'selected' : ''}>Equipamento</option>
+                                <option ${item?.category === 'Consumo' ? 'selected' : ''}>Consumo</option>
+                                <option ${item?.category === 'Ferramenta' ? 'selected' : ''}>Ferramenta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button class="cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button id="save-item-btn" data-item-id="${itemId || ''}" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Salvar</button>
+                    </div>
+                </div>
+            `);
+            modalContainer.querySelector('.cancel-btn').onclick = closeModal;
+            modalContainer.querySelector('#save-item-btn').onclick = saveItem;
+        }
+
+        async function saveItem(e) {
+            const itemId = e.currentTarget.dataset.itemId;
+            const isEditing = itemId !== '';
+            
+            const name = document.getElementById('item-name').value.trim();
+            const sku = document.getElementById('item-sku').value.trim();
+            const category = document.getElementById('item-category').value;
+
+            if (!name || !sku || !category) {
+                alert('Todos os campos são obrigatórios.');
+                return;
+            }
+
+            const itemData = { name, sku, category };
+
+            if (isEditing) {
+                const { error } = await db.from('items').update(itemData).eq('id', itemId);
+                if (error) { alert('Erro ao atualizar item.'); console.error(error); } 
+                else { alert('Item atualizado com sucesso!'); }
+            } else {
+                const { data, error } = await db.from('items').insert(itemData).select().single();
+                if (error) {
+                    if (error.code === '23505') { // Código de violação de unicidade (SKU duplicado)
+                         alert('Erro: Já existe um item com este SKU.');
+                    } else {
+                        alert('Erro ao adicionar item.');
+                        console.error(error);
+                    }
+                } else {
+                    alert('Item adicionado com sucesso!');
+                    // Adiciona o novo item a todos os veículos com quantidade 0
+                    const { data: vehicles } = await db.from('vehicles').select('id');
+                    if (vehicles) {
+                        const inventoryInserts = vehicles.map(v => ({ vehicle_id: v.id, item_id: data.id, quantity: 0 }));
+                        await db.from('inventory').insert(inventoryInserts);
+                    }
+                }
+            }
+            closeModal();
+        }
 
         window.onload = async () => {
             await setupInitialData();
