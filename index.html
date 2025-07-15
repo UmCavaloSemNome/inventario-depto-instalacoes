@@ -44,6 +44,7 @@
         <div id="manager-vehicle-selection" class="hidden min-h-screen"></div>
         <div id="manager-requests-screen" class="hidden min-h-screen"></div>
         <div id="manager-users-screen" class="hidden min-h-screen"></div>
+        <div id="manager-catalog-screen" class="hidden min-h-screen"></div>
         <div id="main-app" class="hidden min-h-screen bg-gray-50"></div>
         <div id="modal-container" class="fixed inset-0 z-30 pointer-events-none"></div>
     </div>
@@ -86,6 +87,7 @@
             managerVehicles: document.getElementById('manager-vehicle-selection'),
             managerRequests: document.getElementById('manager-requests-screen'),
             managerUsers: document.getElementById('manager-users-screen'),
+            managerCatalog: document.getElementById('manager-catalog-screen'),
             main: document.getElementById('main-app'),
         };
         const modalContainer = document.getElementById('modal-container');
@@ -145,18 +147,18 @@
                     <button class="logout-btn text-gray-500 hover:text-red-500 transition-colors"><i class="fas fa-sign-out-alt text-2xl"></i></button>
                 </header>
                 <main class="p-4 space-y-4">
+                    <button id="manage-catalog-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-book text-2xl text-purple-500"></i><div><p class="font-semibold">Gerenciar Catálogo</p><p class="text-sm text-gray-500">Adicionar, editar ou excluir itens</p></div></button>
                     <button id="view-requests-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-inbox text-2xl text-yellow-500"></i><div><p class="font-semibold">Ver Solicitações</p><p class="text-sm text-gray-500">Aprovar ou rejeitar pedidos</p></div></button>
                     <button id="manage-vehicles-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-truck text-2xl text-blue-500"></i><div><p class="font-semibold">Gerenciar Almoxarifados</p><p class="text-sm text-gray-500">Adicionar ou editar veículos</p></div></button>
                     <button id="manage-users-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-users-cog text-2xl text-gray-500"></i><div><p class="font-semibold">Gerenciar Usuários</p><p class="text-sm text-gray-500">Adicionar ou editar técnicos</p></div></button>
                      <button id="import-catalog-btn" class="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"><i class="fas fa-file-csv text-2xl text-green-500"></i><div><p class="font-semibold">Importar Catálogo CSV</p><p class="text-sm text-gray-500">Adicionar ou atualizar itens em massa</p></div></button>
-                </main>
-                <div class="fixed bottom-4 right-4"><button id="add-item-btn" class="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg" title="Adicionar Novo Item ao Catálogo"><i class="fas fa-plus text-2xl"></i></button></div>`;
+                </main>`;
             
             screens.managerHub.querySelector('.logout-btn').onclick = logout;
+            screens.managerHub.querySelector('#manage-catalog-btn').onclick = () => { clearChannels(); listenToCatalogForManager(); };
             screens.managerHub.querySelector('#manage-vehicles-btn').onclick = () => { clearChannels(); listenToVehicles(); };
             screens.managerHub.querySelector('#view-requests-btn').onclick = () => { clearChannels(); listenToRequests(); };
             screens.managerHub.querySelector('#manage-users-btn').onclick = () => { clearChannels(); listenToUsers(); };
-            screens.managerHub.querySelector('#add-item-btn').onclick = () => openAddEditItemModal();
             screens.managerHub.querySelector('#import-catalog-btn').onclick = openImportCatalogCSVModal;
             showScreen('managerHub');
         }
@@ -412,6 +414,48 @@
             showScreen('managerUsers');
         }
 
+        function renderCatalogManagementScreen(items) {
+            screens.managerCatalog.innerHTML = `
+                <header class="bg-white shadow-sm sticky top-0 z-20 p-4 flex justify-between items-center">
+                    <div><p class="font-bold text-lg text-gray-800">Gerenciar Catálogo</p></div>
+                    <button class="back-to-hub-btn text-gray-500 hover:text-blue-500"><i class="fas fa-arrow-left text-2xl"></i></button>
+                </header>
+                <main class="p-4 space-y-3 pb-24"></main>
+                <div class="fixed bottom-4 right-4">
+                    <button id="add-item-btn" class="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-600" title="Adicionar Novo Item">
+                        <i class="fas fa-plus text-2xl"></i>
+                    </button>
+                </div>`;
+            const main = screens.managerCatalog.querySelector('main');
+            if (items.length === 0) {
+                main.innerHTML = `<div class="text-center py-10 px-4 bg-white rounded-lg shadow-sm"><i class="fas fa-book-open text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">Nenhum item no catálogo.</p></div>`;
+            } else {
+                items.sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = "bg-white rounded-lg shadow-sm p-4 flex items-center justify-between";
+                    itemCard.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-gray-800">${item.name}</p>
+                            <p class="text-sm text-gray-500">SKU: ${item.sku} | Categoria: ${item.category}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="edit-item-btn p-2 text-gray-400 hover:text-blue-600 rounded-full" title="Editar Item">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button class="delete-item-btn p-2 text-gray-400 hover:text-red-600 rounded-full" title="Excluir Item">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>`;
+                    itemCard.querySelector('.edit-item-btn').onclick = () => openAddEditItemModal(item.id);
+                    itemCard.querySelector('.delete-item-btn').onclick = () => openDeleteItemModal(item.id, item.name);
+                    main.appendChild(itemCard);
+                });
+            }
+            screens.managerCatalog.querySelector('.back-to-hub-btn').onclick = () => showScreen('managerHub');
+            screens.managerCatalog.querySelector('#add-item-btn').onclick = () => openAddEditItemModal();
+            showScreen('managerCatalog');
+        }
+
         function getIconForCategory(category) { 
             const mapping = { 'Equipamento': 'fa-satellite-dish', 'Consumo': 'fa-tape', 'Ferramenta': 'fa-screwdriver-wrench' };
             return mapping[category] || 'fa-box';
@@ -481,6 +525,20 @@
                     const { data } = await db.from('requests').select('*, users(name), request_items(*)').order('created_at', { ascending: false });
                     requests = data || [];
                     renderRequestsScreen(requests);
+                }).subscribe();
+            channels.push(channel);
+        }
+
+        async function listenToCatalogForManager() {
+            const { data } = await db.from('items').select('*');
+            catalog = data || [];
+            renderCatalogManagementScreen(catalog);
+
+            const channel = db.channel('public:items')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, async () => {
+                    const { data } = await db.from('items').select('*');
+                    catalog = data || [];
+                    renderCatalogManagementScreen(catalog);
                 }).subscribe();
             channels.push(channel);
         }
