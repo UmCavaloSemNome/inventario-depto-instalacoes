@@ -126,22 +126,26 @@ export function VehicleManagementPage() {
   };
 
   const handleAddVehicle = () => {
+    console.log('handleAddVehicle chamado'); // Adicione esta linha
     setVehicleToEdit(null);
     setIsFormModalOpen(true);
   };
 
   const handleEditVehicle = (vehicle: Vehicle) => {
+    console.log('handleEditVehicle chamado para:', vehicle.id); // Adicione esta linha
     setVehicleToEdit(vehicle);
     setIsFormModalOpen(true);
   };
 
   const handleDeleteVehicle = (vehicleId: string, vehicleName: string) => {
+    console.log('handleDeleteVehicle chamado para:', vehicleId, vehicleName); // Adicione esta linha
     setVehicleIdToDelete(vehicleId);
     setVehicleNameToDelete(vehicleName);
     setIsDeleteModalOpen(true);
   };
 
   const handleModalClose = () => {
+    console.log('handleModalClose chamado'); // Adicione esta linha
     setIsFormModalOpen(false);
     setVehicleToEdit(null);
     setIsDeleteModalOpen(false);
