@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { CatalogManagementPage } from './pages/CatalogManagementPage'; // Importa a CatalogManagementPage
+import { CatalogManagementPage } from './pages/CatalogManagementPage';
+import { VehicleManagementPage } from './pages/VehicleManagementPage'; // Importa a VehicleManagementPage
 import { useAuth } from './contexts/AuthContext';
 
 // Componente placeholder para a tela do técnico (será substituído)
@@ -40,6 +41,10 @@ function App() {
         <Route
           path="/catalog"
           element={user && user.role === 'manager' ? <CatalogManagementPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/vehicles"
+          element={user && user.role === 'manager' ? <VehicleManagementPage /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/technician"

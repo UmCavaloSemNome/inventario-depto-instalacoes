@@ -64,6 +64,7 @@ export function DashboardPage() {
         </button>
         <button
           id="manage-vehicles-btn"
+          onClick={() => navigate('/vehicles')}
           className="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"
         >
           <FontAwesomeIcon icon={faTruck} className="text-2xl text-blue-500" />
