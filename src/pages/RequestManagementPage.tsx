@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import type { Request } from '../types/Request';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faInbox, faBoxOpen } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faBoxOpen } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 
 export function RequestManagementPage() {
