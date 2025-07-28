@@ -126,31 +126,36 @@ export function VehicleManagementPage() {
   };
 
   const handleAddVehicle = () => {
-    console.log('handleAddVehicle chamado'); // Adicione esta linha
+    console.log('handleAddVehicle chamado');
     setVehicleToEdit(null);
     setIsFormModalOpen(true);
+    console.log('isFormModalOpen após handleAddVehicle:', isFormModalOpen); // Adicione esta linha
   };
 
   const handleEditVehicle = (vehicle: Vehicle) => {
-    console.log('handleEditVehicle chamado para:', vehicle.id); // Adicione esta linha
+    console.log('handleEditVehicle chamado para:', vehicle.id);
     setVehicleToEdit(vehicle);
     setIsFormModalOpen(true);
+    console.log('isFormModalOpen após handleEditVehicle:', isFormModalOpen); // Adicione esta linha
   };
 
   const handleDeleteVehicle = (vehicleId: string, vehicleName: string) => {
-    console.log('handleDeleteVehicle chamado para:', vehicleId, vehicleName); // Adicione esta linha
+    console.log('handleDeleteVehicle chamado para:', vehicleId, vehicleName);
     setVehicleIdToDelete(vehicleId);
     setVehicleNameToDelete(vehicleName);
     setIsDeleteModalOpen(true);
+    console.log('isDeleteModalOpen após handleDeleteVehicle:', isDeleteModalOpen); // Adicione esta linha
   };
 
   const handleModalClose = () => {
-    console.log('handleModalClose chamado'); // Adicione esta linha
+    console.log('handleModalClose chamado');
     setIsFormModalOpen(false);
     setVehicleToEdit(null);
     setIsDeleteModalOpen(false);
     setVehicleIdToDelete(null);
     setVehicleNameToDelete(null);
+    console.log('isFormModalOpen após handleModalClose:', isFormModalOpen); // Adicione esta linha
+    console.log('isDeleteModalOpen após handleModalClose:', isDeleteModalOpen); // Adicione esta linha
   };
 
   return (
