@@ -10,12 +10,12 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  console.log('Modal isOpen prop:', isOpen); // Adicione esta linha
+  console.log('Modal isOpen prop:', isOpen);
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 modal-backdrop">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 modal-content transform transition-all duration-300 ease-out scale-95 opacity-0 animate-scale-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform transition-all duration-300 ease-out scale-100">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-800">{title}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
