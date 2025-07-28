@@ -12,7 +12,11 @@ export function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      if (user.role === 'manager') {
+        navigate('/dashboard', { replace: true });
+      } else if (user.role === 'technician') {
+        navigate('/technician', { replace: true });
+      }
     }
   }, [user, navigate]);
 
