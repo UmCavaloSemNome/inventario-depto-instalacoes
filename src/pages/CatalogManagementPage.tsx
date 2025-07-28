@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
-import { Item } from '../types/Item';
+import type { Item } from '../types/Item';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faPlus, faPencilAlt, faTrashAlt, faBookOpen, faCogs, faBox, faWrench, faQuestion } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';

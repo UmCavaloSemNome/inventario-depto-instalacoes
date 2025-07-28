@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
-import { Item } from '../types/Item';
+import type { Item } from '../types/Item';
 import { supabase } from '../services/supabase';
 
 interface ItemFormModalProps {
