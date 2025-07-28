@@ -75,6 +75,7 @@ export function DashboardPage() {
         </button>
         <button
           id="manage-users-btn"
+          onClick={() => navigate('/users')}
           className="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"
         >
           <FontAwesomeIcon icon={faUsersCog} className="text-2xl text-gray-500" />
