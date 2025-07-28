@@ -55,6 +55,7 @@ export function DashboardPage() {
         </button>
         <button
           id="view-requests-btn"
+          onClick={() => navigate('/requests')}
           className="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"
         >
           <FontAwesomeIcon icon={faInbox} className="text-2xl text-yellow-500" />
