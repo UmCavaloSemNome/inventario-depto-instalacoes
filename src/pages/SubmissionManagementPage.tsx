@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import type { Submission } from '../types/Submission';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faClipboardCheck, faBoxOpen } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faBoxOpen } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 
 export function SubmissionManagementPage() {
