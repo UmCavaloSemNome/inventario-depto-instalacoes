@@ -44,6 +44,7 @@ export function DashboardPage() {
         </button>
         <button
           id="view-submissions-btn"
+          onClick={() => navigate('/submissions')}
           className="w-full text-left p-4 bg-white hover:bg-blue-50 rounded-lg shadow-sm flex items-center space-x-4"
         >
           <FontAwesomeIcon icon={faClipboardCheck} className="text-2xl text-cyan-500" />

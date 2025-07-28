@@ -3,7 +3,8 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CatalogManagementPage } from './pages/CatalogManagementPage';
 import { VehicleManagementPage } from './pages/VehicleManagementPage';
-import { UserManagementPage } from './pages/UserManagementPage'; // Importa a UserManagementPage
+import { UserManagementPage } from './pages/UserManagementPage';
+import { SubmissionManagementPage } from './pages/SubmissionManagementPage'; // Importa a SubmissionManagementPage
 import { useAuth } from './contexts/AuthContext';
 
 // Componente placeholder para a tela do técnico (será substituído)
@@ -50,6 +51,10 @@ function App() {
         <Route
           path="/users"
           element={user && user.role === 'manager' ? <UserManagementPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/submissions"
+          element={user && user.role === 'manager' ? <SubmissionManagementPage /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/technician"
