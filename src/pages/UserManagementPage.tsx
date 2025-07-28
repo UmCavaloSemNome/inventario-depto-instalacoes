@@ -3,7 +3,7 @@ import { supabase } from '../services/supabase';
 import type { User } from '../types/User';
 import type { Vehicle } from '../types/Vehicle';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faPlus, faPencilAlt, faTrashAlt, faUsers, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faPencilAlt, faTrashAlt, faUsers, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../components/Modal';
 
