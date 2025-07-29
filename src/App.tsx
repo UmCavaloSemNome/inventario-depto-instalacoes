@@ -6,7 +6,9 @@ import { VehicleManagementPage } from './pages/VehicleManagementPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { SubmissionManagementPage } from './pages/SubmissionManagementPage';
 import { RequestManagementPage } from './pages/RequestManagementPage';
-import InventoryPage from './pages/InventoryPage';
+import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
+import InventoryCheckPage from './pages/InventoryCheckPage';
+import MaterialRequestPage from './pages/MaterialRequestPage';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -42,7 +44,15 @@ function App() {
         />
         <Route
           path="/technician"
-          element={user && user.role === 'technician' ? <InventoryPage /> : <Navigate to="/login" replace />}
+          element={user && user.role === 'technician' ? <TechnicianDashboardPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/inventory-check"
+          element={user && user.role === 'technician' ? <InventoryCheckPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/request-material"
+          element={user && user.role === 'technician' ? <MaterialRequestPage /> : <Navigate to="/login" replace />}
         />
         {/* Redireciona a rota raiz com base no papel do usuário */}
         <Route
