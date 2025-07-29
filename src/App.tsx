@@ -6,7 +6,7 @@ import { VehicleManagementPage } from './pages/VehicleManagementPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { SubmissionManagementPage } from './pages/SubmissionManagementPage';
 import { RequestManagementPage } from './pages/RequestManagementPage';
-import { InventoryPage } from './pages/InventoryPage';
+import InventoryPage from './pages/InventoryPage';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {

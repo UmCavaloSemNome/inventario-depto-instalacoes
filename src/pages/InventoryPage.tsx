@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
-import type { Item } from '../types/Item';
 
 const InventoryPage: React.FC = () => {
   const { user, logout } = useAuth();
