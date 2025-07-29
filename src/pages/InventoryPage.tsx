@@ -17,7 +17,7 @@ const InventoryPage: React.FC = () => {
   const fetchInventory = async (vehicleId: string) => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('inventory_items')
+      .from('inventory')
       .select('quantity, items:item_id(*)')
       .eq('vehicle_id', vehicleId);
 
