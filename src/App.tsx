@@ -5,30 +5,9 @@ import { CatalogManagementPage } from './pages/CatalogManagementPage';
 import { VehicleManagementPage } from './pages/VehicleManagementPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { SubmissionManagementPage } from './pages/SubmissionManagementPage';
-import { RequestManagementPage } from './pages/RequestManagementPage'; // Importa a RequestManagementPage
+import { RequestManagementPage } from './pages/RequestManagementPage';
+import { InventoryPage } from './pages/InventoryPage';
 import { useAuth } from './contexts/AuthContext';
-
-// Componente placeholder para a tela do técnico (será substituído)
-function TechnicianPage() {
-  const { user, logout } = useAuth();
-
-  if (!user || user.role !== 'technician') {
-    return <p>Acesso negado.</p>;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <h1 className="text-3xl font-bold text-gray-800">Bem-vindo, Técnico {user.name}!</h1>
-      <p className="text-gray-600">Seu veículo: {user.vehicle_id}</p>
-      <button
-        onClick={logout}
-        className="mt-4 py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600"
-      >
-        Sair
-      </button>
-    </div>
-  );
-}
 
 function App() {
   const { user } = useAuth();
@@ -63,7 +42,7 @@ function App() {
         />
         <Route
           path="/technician"
-          element={user && user.role === 'technician' ? <TechnicianPage /> : <Navigate to="/login" replace />}
+          element={user && user.role === 'technician' ? <InventoryPage /> : <Navigate to="/login" replace />}
         />
         {/* Redireciona a rota raiz com base no papel do usuário */}
         <Route

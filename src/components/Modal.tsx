@@ -10,7 +10,6 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  console.log('Modal isOpen prop:', isOpen);
   if (!isOpen) return null;
 
   return (
